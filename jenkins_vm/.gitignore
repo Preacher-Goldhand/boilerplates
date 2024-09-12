@@ -1,0 +1,4 @@
+*.box
+*.vdi
+hosts/
+.vagrant/

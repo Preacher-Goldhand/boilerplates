@@ -1,0 +1,21 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+ 
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+  config.vm.box = "master_box"
+
+  config.vm.define "jenkins" do |subconfig|
+
+    subconfig.vm.provider "virtualbox" do |vb|
+      vb.name = "jenkins-server"                
+      vb.memory = 16384                         
+      vb.cpus = 2                              
+      vb.customize ["modifyvm", "jenkins-server", "--nic1", "bridged"]
+      vb.customize ["modifyvm", "jenkins-server", "--nic2", "none"]
+    end
+
+    subconfig.vm.network "public_network", bridge: "eth0"  
+  end
+end

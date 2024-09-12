@@ -1,0 +1,112 @@
+- hosts: jenkins
+  become: true         
+  become_user: root    
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install required dependencies
+      apt:
+        name:
+          - openjdk-17-jdk
+          - curl
+          - gnupg2
+          - ca-certificates
+        state: present
+
+    - name: Add Jenkins repository key
+      apt_key:
+        url: https://pkg.jenkins.io/debian/jenkins.io.key
+        state: present
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb http://pkg.jenkins.io/debian-stable binary/"
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Download Tomcat
+      get_url:
+        url: "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.94/bin/apache-tomcat-9.0.94.tar.gz"
+        dest: /opt/
+        
+    - name: Extract Tomcat
+      unarchive:
+        src: /opt/apache-tomcat-9.0.94.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: Remove existing Tomcat directory if it exists
+      file:
+        path: /opt/tomcat
+        state: absent
+
+    - name: Rename Tomcat directory
+      command: mv /opt/apache-tomcat-9.0.94 /opt/tomcat
+
+    - name: Set Tomcat permissions
+      file:
+        path: /opt/tomcat
+        owner: root
+        group: root
+        recurse: yes
+
+    - name: Configure Tomcat to start on boot (systemd service file)
+      copy:
+        dest: /etc/systemd/system/tomcat.service
+        content: |
+          [Unit]
+          Description=Apache Tomcat Web Application Container
+          After=network.target
+
+          [Service]
+          Type=forking
+
+          Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+          Environment=CATALINA_HOME=/opt/tomcat
+          Environment=CATALINA_BASE=/opt/tomcat
+          Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+          Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+
+          ExecStart=/opt/tomcat/bin/startup.sh
+          ExecStop=/opt/tomcat/bin/shutdown.sh
+
+          User=root
+          Group=root
+          UMask=0007
+          RestartSec=10
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd to apply the new Tomcat service
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable Tomcat service to start at boot
+      systemd:
+        name: tomcat
+        enabled: yes
+
+    - name: Start Tomcat service
+      systemd:
+        name: tomcat
+        state: started
+
+    - name: Download Jenkins WAR file
+      get_url:
+        url: https://get.jenkins.io/war-stable/latest/jenkins.war
+        dest: /opt/tomcat/webapps/jenkins.war
+
+    - name: Restart Tomcat to deploy Jenkins
+      systemd:
+        name: tomcat
+        state: restarted
