@@ -1,4 +1,4 @@
-# Ansible and Terraform Templates Repository
+# Boilerplates for Ansible, Terraform and Shell Scripts
 
 ## Overview
 This repository contains a collection of Ansible playbooks and Terraform scripts designed to automate various tasks and configurations. It serves as a central resource for deploying and managing different applications, infrastructure, and services efficiently across diverse environments.
