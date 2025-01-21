@@ -1,0 +1,95 @@
+---
+- name: Install Docker and Minikube on various Linux distros
+  hosts: all
+  become: true
+  tasks:
+
+  # Detect distribution
+  - name: Get the distribution name
+    command: lsb_release -i | awk -F'\t' '{print $2}'
+    register: distro
+    changed_when: false
+
+  # Set package manager based on distro
+  - name: Set package manager
+    set_fact:
+      package_manager: "{{ 'apt' if 'Ubuntu' in distro.stdout or 'Debian' in distro.stdout else 'dnf' if 'CentOS' in distro.stdout or 'RedHat' in distro.stdout or 'Fedora' in distro.stdout else 'pacman' }}"
+  
+  # Install prerequisites for different package managers
+  - name: Install prerequisites
+    package:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+    when: package_manager == "apt"
+
+  - name: Install prerequisites
+    package:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - ca-certificates
+      - curl
+      - dnf-plugins-core
+    when: package_manager == "dnf"
+
+  - name: Install prerequisites
+    package:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - ca-certificates
+      - curl
+      - base-devel
+    when: package_manager == "pacman"
+
+  # Install Docker
+  - name: Install Docker
+    package:
+      name: "{{ 'docker-ce' if package_manager != 'pacman' else 'docker' }}"
+      state: present
+    when: package_manager in ["apt", "dnf", "pacman"]
+
+  # Enable and start Docker service
+  - name: Ensure Docker service is running
+    service:
+      name: docker
+      state: started
+      enabled: true
+
+  # Install Minikube
+  - name: Download and install Minikube
+    get_url:
+      url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+      dest: /usr/local/bin/minikube
+      mode: '0755'
+
+  # Install kubectl
+  - name: Download and install kubectl
+    get_url:
+      url: https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+      dest: /usr/local/bin/kubectl
+      mode: '0755'
+
+  # Verify installations
+  - name: Verify Minikube version
+    command: minikube version
+    register: minikube_version
+    ignore_errors: true
+
+  - name: Display Minikube version
+    debug:
+      msg: "{{ minikube_version.stdout }}"
+
+  - name: Verify kubectl version
+    command: kubectl version --client
+    register: kubectl_version
+    ignore_errors: true
+
+  - name: Display kubectl version
+    debug:
+      msg: "{{ kubectl_version.stdout }}"
