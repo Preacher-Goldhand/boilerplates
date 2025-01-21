@@ -105,10 +105,6 @@ cd boilerplates
   bash shell-scripts/<script-name>.sh
 
   ```
-## License
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
-
 **Note:** Ensure that all required fields, such as IP addresses, hostnames, and sensitive variables, are filled in with actual values relevant to your environment.
 
 
