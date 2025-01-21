@@ -10,6 +10,9 @@ This repository contains a collection of Ansible playbooks and Terraform scripts
 - **Multi-Platform Support:** Compatible with popular Linux distributions and major cloud providers.
 
 ## Repository Structure
+
+**Note:** Please maintain this structure.
+
 ```
 .
 ├── ansible/                # Directory for Ansible-related resources
